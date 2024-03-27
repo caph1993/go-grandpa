@@ -23,6 +23,7 @@
     "@types/jquery": "^3.5.29",
     "@types/socket.io": "^3.0.2",
     "@vanilla-extract/css": "^1.14.1",
+    "clsx": "^2.1.0",
     "concurrently": "^8.2.2",
     "express": "^4.19.2",
     "jquery": "^3.7.1",
