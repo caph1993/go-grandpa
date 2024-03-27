@@ -54,7 +54,7 @@ function _App() {
           </Group>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p="md" zIndex={301}>
         {/* <span>
           <img src="/public/favicon.png" width={25} />
         </span> */}
@@ -170,21 +170,23 @@ $(document).on("root-did-mount", function (_: any) {
   socket.on('hist', (data: any) => {
     console.log('Received move:', data);
     data.forEach(handleMove);
-    if (data.length < Object.keys(parsed).length) {
-      // Out of sync. The game was reset.
-      parsed = {}; // clear parsed moves
-      board.removeAllObjects();
-      data.forEach(handleMove);
-    }
+    // Check out of sync
+    const lastTime = data.length && new Date(data.slice(-1)[0].time).getTime();
+    const outOfDate = new Date().getTime() > lastTime + 5000;
+    if (!outOfDate) return;
+    parsed = {}; // clear parsed moves
+    board.removeAllObjects();
+    data.forEach(handleMove);
   });
   socket.on('users', (nUsers: number) => {
     $('#nUsers').text('x' + nUsers);
   });
   let parsed: any = {};
-  function handleMove({ x, y, action, figure, black, hold, id }: any) {
+  function handleMove({ x, y, action, figure, black, hold, id, time }: any) {
     if (parsed[id]) return;
     parsed[id] = true;
     if (action == 'indicate') {
+      if (!hold && new Date().getTime() > new Date(time).getTime() + 5000) return;
       const symbol = { 'triangle': 'TR', 'circle': 'CR', 'square': 'SQ' }[figure as string];
       const obj = { x: x, y: y, type: symbol };
       board.addObject(obj);
