@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { IconArrowBarToDown, IconArrowBarUp, IconCircle, IconSquare, IconTriangle, IconUser, IconX } from "@tabler/icons-react";
 import { SegmentedControl } from '@mantine/core';
 import { useMyLocalStorage2 } from "./useMyLocalStorage";
+import { ThemeButtonMoonSun } from "./ThemeButtonMoonSun/ThemeButtonMoonSun";
 
 
 export default function App() {
@@ -55,13 +56,12 @@ function _App() {
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="md" zIndex={301}>
-        {/* <span>
-          <img src="/public/favicon.png" width={25} />
-        </span> */}
         Para jugar entre el jóven y el viejo.
+        <ThemeButtonMoonSun />
         <Button onClick={() => $(document).trigger('reset')}>
           Reiniciar
         </Button>
+
       </AppShell.Navbar>
       <AppShell.Main>
         {useMemo(() => <div id="board"></div>, [])}
