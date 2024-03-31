@@ -4,7 +4,8 @@ import { theme } from "./theme";
 import { AppShell, Burger, Group } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useMemo } from "react";
-import { IconArrowBarToDown, IconArrowBarUp, IconCircle, IconSquare, IconTriangle, IconUser, IconX } from "@tabler/icons-react";
+import { IconArrowBarToDown, IconArrowBarUp, IconCircle, IconPointer, IconSquare, IconTriangle, IconUser, IconX } from "@tabler/icons-react";
+// import { IconArrowBackUp, IconArrowForwardUp } from "@tabler/icons-react";
 import { SegmentedControl } from '@mantine/core';
 import { useMyLocalStorage2 } from "./useMyLocalStorage";
 import { ThemeButtonMoonSun } from "./ThemeButtonMoonSun/ThemeButtonMoonSun";
@@ -31,6 +32,10 @@ function _App() {
   const symbol = { 'triangle': <IconTriangle />, 'circle': <IconCircle />, 'square': <IconSquare /> }[figure];
   const [action, setAction] = useMyLocalStorage2('action', 'indicate');
   Object.assign(controls, { action, figure, black, hold });
+
+  // Check if mobile using mantine query
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
   return (
     <AppShell
       header={{ height: 60 }}
@@ -55,7 +60,7 @@ function _App() {
           </Group>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md" zIndex={301}>
+      <AppShell.Navbar p="md" zIndex={320}>
         Para jugar entre el jóven y el viejo.
         <ThemeButtonMoonSun />
         <Button onClick={() => $(document).trigger('reset')}>
@@ -66,8 +71,9 @@ function _App() {
       <AppShell.Main>
         {useMemo(() => <div id="board"></div>, [])}
       </AppShell.Main>
-      <AppShell.Footer>
+      <AppShell.Footer zIndex={319}>
         <Group dir="row" justify="space-around">
+          {/* <ActionIcon children={<IconArrowBackUp />} onClick={() => $(document).trigger('undo')} /> */}
           <SegmentedControl
             value={action}
             onChange={setAction}
@@ -77,7 +83,7 @@ function _App() {
                 label: (
                   <Center style={{ gap: 10 }}>
                     <IconArrowBarToDown style={{ width: rem(16), height: rem(16) }} />
-                    <span>Colocar</span>
+                    {!isMobile && <span>Colocar</span>}
                   </Center>
                 ),
               },
@@ -86,7 +92,7 @@ function _App() {
                 label: (
                   <Center style={{ gap: 10 }}>
                     <IconArrowBarUp style={{ width: rem(16), height: rem(16) }} />
-                    <span>Retirar</span>
+                    {!isMobile && <span>Retirar</span>}
                   </Center>
                 ),
               },
@@ -94,13 +100,14 @@ function _App() {
                 value: 'indicate',
                 label: (
                   <Center style={{ gap: 10 }}>
-                    <IconArrowBarUp style={{ width: rem(16), height: rem(16) }} />
-                    <span>Indicar</span>
+                    <IconPointer style={{ width: rem(16), height: rem(16) }} />
+                    {!isMobile && <span>Indicar</span>}
                   </Center>
                 ),
               },
             ]}
           />
+          {/* <ActionIcon children={<IconArrowForwardUp />} onClick={() => $(document).trigger('redo')} /> */}
         </Group>
       </AppShell.Footer>
     </AppShell >
@@ -108,13 +115,12 @@ function _App() {
 }
 
 
+import { WGo, MyBoard, numberSymbol, Cursor } from "./WGoBoardAdapter";
+
+
 $(document).on("root-did-mount", function (_: any) {
-  console.log(document.getElementById("board"))
-  //@ts-ignore
-  let WGo = window["WGo"];
-  WGo.DIR = "/public";
   const width = Math.min(window.innerWidth - 30, 600, window.innerHeight - 30);
-  var board = new WGo.Board(document.getElementById("board"), {
+  const board = new MyBoard(document.getElementById("board")!, {
     width: width,
     size: 9,
     section: {
@@ -131,14 +137,11 @@ $(document).on("root-did-mount", function (_: any) {
     grid: {
       draw: function (_: any, board: any) {
         var ch, t, xright, xleft, ytop, ybottom;
-        //@ts-ignore
-        this.fillStyle = "rgba(0,0,0,0.7)";
-        //@ts-ignore
-        this.textBaseline = "middle";
-        //@ts-ignore
-        this.textAlign = "center";
-        //@ts-ignore
-        this.font = board.stoneRadius + "px " + (board.font || "");
+        let _this = this as any;
+        _this.fillStyle = "rgba(0,0,0,0.7)";
+        _this.textBaseline = "middle";
+        _this.textAlign = "center";
+        _this.font = board.stoneRadius + "px " + (board.font || "");
         xright = board.getX(-0.75);
         xleft = board.getX(board.size - 0.25);
         ytop = board.getY(-0.75);
@@ -147,28 +150,29 @@ $(document).on("root-did-mount", function (_: any) {
           ch = i + "A".charCodeAt(0);
           if (ch >= "I".charCodeAt(0)) ch++;
           t = board.getY(i);
-          //@ts-ignore
-          this.fillText(board.size - i, xright, t);
-          //@ts-ignore
-          this.fillText(board.size - i, xleft, t);
+          _this.fillText(board.size - i, xright, t);
+          _this.fillText(board.size - i, xleft, t);
           t = board.getX(i);
-          //@ts-ignore
-          this.fillText(String.fromCharCode(ch), t, ytop);
-          //@ts-ignore
-          this.fillText(String.fromCharCode(ch), t, ybottom);
+          _this.fillText(String.fromCharCode(ch), t, ytop);
+          _this.fillText(String.fromCharCode(ch), t, ybottom);
         }
-        //@ts-ignore
-        this.fillStyle = "black";
+        _this.fillStyle = "black";
       }
     }
   }
   board.addCustomObject(coordinates);
+  let nStones = 0;
 
   //@ts-ignore
   const socket = io({ path: '/go/socket.io' }) as any;
+
+  socket.on('users', (nUsers: number) => {
+    $('#nUsers').text('x' + nUsers);
+  });
+
   // console.log(socket)
   socket.on('hist', (data: any) => {
-    console.log('Received move:', data);
+    // console.log('Received hist:', data);
     data.forEach(handleMove);
     // Check out of sync
     const lastTime = data.length && new Date(data.slice(-1)[0].time).getTime();
@@ -176,45 +180,128 @@ $(document).on("root-did-mount", function (_: any) {
     if (!outOfDate) return;
     parsed = {}; // clear parsed moves
     board.removeAllObjects();
+    nStones = data
+      .map((move: any) => move.action == 'add' ? 1 : move.action == 'remove' ? -1 : 0)
+      .reduce((a: number, b: number) => a + b, 0);
     data.forEach(handleMove);
   });
-  socket.on('users', (nUsers: number) => {
-    $('#nUsers').text('x' + nUsers);
-  });
+
   let parsed: any = {};
-  function handleMove({ x, y, action, figure, black, hold, id, time }: any) {
+  function handleMove({ x, y, action, figure, black, id, num }: any) {
     if (parsed[id]) return;
     parsed[id] = true;
     if (action == 'indicate') {
-      if (!hold && new Date().getTime() > new Date(time).getTime() + 5000) return;
       const symbol = { 'triangle': 'TR', 'circle': 'CR', 'square': 'SQ' }[figure as string];
       const obj = { x: x, y: y, type: symbol };
       board.addObject(obj);
-      if (!hold) setTimeout(() => board.removeObject(obj), 1000);
     } else if (action == 'add') {
       const obj = { x: x, y: y, c: black ? WGo.B : WGo.W };
       board.addObject(obj);
+      if (num != undefined) {
+        const obj = { x: x, y: y, type: numberSymbol, customType: num };
+        // Delete old movements
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            for (let obj of board.obj_arr[i][j]) {
+              let k = parseInt(obj.customType);
+              if (isNaN(obj.customType)) continue;
+              if (k <= 0 || k < nStones) board.removeObject(obj);
+            }
+          }
+        }
+        board.addObject(obj);
+      }
     } else if (action == "remove") {
       board.removeObjectsAt(x, y);
     }
   }
+
+  socket.on('quick-marker', (data: any) => {
+    const { x, y, figure } = data;
+    showQuickMarker(x, y, figure);
+  });
+  function showQuickMarker(x: number, y: number, figure: string) {
+    const symbol = { 'triangle': 'TR', 'circle': 'CR', 'square': 'SQ' }[figure as string];
+    const obj = { x: x, y: y, type: symbol };
+    board.addObject(obj);
+    setTimeout(() => board.removeObject(obj), 1000);
+  }
+
   $(document).on("reset", function (_: any) {
     if (confirm('¿Estás seguro de que deseas reiniciar el juego?')) {
       board.removeAllObjects();
       parsed = {};
       socket.emit('clear');
+      nStones = 0;
     }
   });
 
   board.addEventListener("click", function (x: number, y: number) {
     $(document).trigger("board-single-click", { x: x, y: y, board });
   });
+  // board.addEventListener('contextmenu', function (ev: any, data: any) {
+  //   ev.preventDefault();
+  //   const { x, y } = data;
+  //   const action = 'remove';
+  //   const there = board.obj_arr[x][y].filter((obj: any) => obj.c == WGo.B || obj.c == WGo.W);
+  //   if (action == 'remove' && there.length == 0) return;
+  //   const id = new Date().toISOString() + Math.random();
+  //   nStones -= 1;
+  //   const move = { x, y, action, figure: controls.figure, black: controls.black, hold: controls.hold, id, num: nStones };
+  //   handleMove(move);
+  //   socket.emit('move', move);
+  //   return false;
+  // }, false);
+
   $(document).on("board-single-click", function (_: any, data: any) {
     const { x, y } = data;
-    const time = new Date().toISOString();
-    const id = time + Math.random();
-    const move = { x, y, action: controls.action, figure: controls.figure, black: controls.black, hold: controls.hold, id, time };
+    if (x < 0 || y < 0 || x >= board.size || y >= board.size) return;
+    const action = controls.action;
+    if (action == 'indicate' && !controls.hold) {
+      showQuickMarker(x, y, controls.figure);
+      socket.emit('quick-marker', { x, y, figure: controls.figure });
+      return;
+    }
+    const there = board.obj_arr[x][y].filter((obj: any) => obj.c == WGo.B || obj.c == WGo.W);
+    if (action == 'add' && there.length > 0) return;
+    if (action == 'remove' && there.length == 0) return;
+    const id = new Date().toISOString() + Math.random();
+    nStones += action == 'add' ? 1 : action == 'remove' ? -1 : 0;
+    const move = {
+      x, y, action,
+      figure: controls.figure,
+      black: controls.black,
+      hold: controls.hold,
+      id, num: nStones
+    };
     handleMove(move);
     socket.emit('move', move);
   });
+
+  // Show hisCursor (DONE)
+  // Add numbers (DONE)
+  // Add undo/redo ...
+
+  let myCursor = new Cursor("#0f24e788", board);
+  let hisCursor = new Cursor("#eb131388", board);
+  socket.on('cursor', (data: any) => {
+    const { x, y } = data;
+    hisCursor.update(x, y);
+  });
+
+  board.addEventListener("mousemove", function (x: number, y: number) {
+    const changed = x != myCursor.boardObj.x || y != myCursor.boardObj.y;
+    myCursor.update(x, y);
+    if (changed) socket.emit('cursor', { x: myCursor.boardObj.x, y: myCursor.boardObj.y });
+  });
+
+  board.addEventListener("touchmove", function (_: any, __: any, e: any) {
+    // console.log('touchmove', e);
+    const { x, y } = board.getMousePos(e.touches[0].clientX, e.touches[0].clientY - board.top);
+    const { x: oldX, y: oldY } = myCursor.boardObj;
+    const changed = x != oldX || y != oldY;
+    myCursor.update(x, y);
+    if (changed) socket.emit('cursor', { x: myCursor.boardObj.x, y: myCursor.boardObj.y });
+  });
+
 });

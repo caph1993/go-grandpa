@@ -1141,7 +1141,6 @@ var drawField = function(x,y) {
 		if(!obj.type) handler = this.stoneHandler;
 		else if(typeof obj.type == "string") handler = Board.drawHandlers[obj.type];
 		else handler = obj.type;
-
 		for(var layer in handler) {
 			handler[layer].draw.call(this[layer].getContext(obj), obj, this);
 		}

@@ -10,7 +10,7 @@ const PORT = parseInt(process.env.PORT || '3000');
 
 app.get("/message", (_, res) => res.send("Hello from express!"));
 
-const server = ViteExpress.listen(app, PORT, () => console.log("Server is listening..."));
+const server = ViteExpress.listen(app, PORT, () => console.log(`Server is listening... http://localhost:${PORT}`));
 
 const io = new Server(server, {
   path: '/go/socket.io',
@@ -18,6 +18,7 @@ const io = new Server(server, {
 
 
 const hist: any[] = [];
+const markers: any[] = [];
 let nUsers = 0;
 io.on('connection', (socket) => {
   // console.log('A user connected');
@@ -35,6 +36,12 @@ io.on('connection', (socket) => {
     // console.log('Received move:', data);
     socket.broadcast.emit('hist', hist);
     socket.emit('hist', hist);
+  });
+  socket.on('cursor', (data: any) => {
+    socket.broadcast.emit('cursor', data);
+  });
+  socket.on('quick-marker', (data: any) => {
+    socket.broadcast.emit('quick-marker', data);
   });
   socket.on('disconnect', () => {
     nUsers--;
